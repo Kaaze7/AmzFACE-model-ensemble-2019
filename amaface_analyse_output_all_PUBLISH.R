@@ -4,7 +4,6 @@
 # run amaface_process_output_all.R before
 # K Fleischer
 # 
-# 4 September 2018
 #
 ###################################
 rm(list=ls())
