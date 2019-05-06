@@ -26,23 +26,29 @@ library(extrafont)
 extrafont::loadfonts(device = "pdf")
 loadfonts(device = "pdf", quiet = FALSE)
 
-#set working directories
+#set working directory to upload model output
 setwd('~/SpiderOak Hive/AMAZONAS/FACE-MEI/model_output/all_models')
-
-maxyear<-2013
-model_names<-c("CABLE","CABLE-POP","ELM-CTC","ELM-ECA","GDAY","ORCHIDEE","LPJ-GUESS","CABLE-POP(CN)","O-CN","GDAY(CN)","JULES","ED2","ELM-FATES","InLand")
-#uploads data and small post-process steps
-
-print("start uploading and preprocessing")
 dfa<-readRDS("amaface_allruns_annual_R2_bio.rds")
-units<- readRDS('units_frame.rds')
 
-modcod<-c("CAB","POP","PON","LPJ","OCN","GDA","GDP","ECA","ELM","JUL","ORC","INL","ED2","FAT")
+#integrate changes in rds...........................................
 dfa$MOD<-factor(dfa$MOD, levels = c("CAB","POP","ELM","ECA","GDP","ORC","LPJ","PON","OCN","GDA","JUL","ED2","FAT","INL"))
-cols=data.frame(MOD=c(levels(dfa$MOD)),COL=c(brewer.pal(7,"Greens")[7:2],brewer.pal(6,"Blues")[2:6],brewer.pal(4,"Greys")[c(2:4)]),stringsAsFactors = F)
 
-#add grouping variables (C, CN, CNP, DGVM) and move forward
-#this can be done neater!
+#some fixes for now (need fixing by modelers) (always copy from processing script)
+dfa$TAIR<-dfa$TAIR+273.15  #all models provide in celsius now??
+dfa$AIRP[dfa$MOD%in%c("OCN","GDP","GDA","ECA","JUL","ELM")]<-dfa$AIRP[dfa$MOD%in%c("OCN","GDP","GDA","ECA","JUL","ELM")]/100 #is in Pa but should be in hPa
+dfa$PPMIN[dfa$MOD=="ECA"]<-dfa$PLAB[dfa$MOD=="ECA"]+dfa$PSEC[dfa$MOD=="ECA"]+dfa$POCC[dfa$MOD=="ECA"]+dfa$PPAR[dfa$MOD=="ECA"]
+dfa$PSOIL[dfa$MOD=="ECA"]<-dfa$PPMIN[dfa$MOD=="ECA"]+dfa$PPORG[dfa$MOD=="ECA"]
+dfa$PPMIN[dfa$MOD=="ORC"]<-dfa$PLAB[dfa$MOD=="ORC"]  
+dfa$NFLIT[dfa$MOD=="LPJ"]<-dfa$NFLITA[dfa$MOD=="LPJ"]+dfa$NFLITB[dfa$MOD=="LPJ"] 
+#move CR to fine roots in CAB (still check with BP/YP)
+dfa$CFR[dfa$MOD=="CAB"]<-dfa$CCR[dfa$MOD=="CAB"] 
+dfa$CCR[dfa$MOD=="CAB"]<-NA
+dfa$CGFR[dfa$MOD=="CAB"]<-dfa$CGCR[dfa$MOD=="CAB"] 
+dfa$CGCR[dfa$MOD=="CAB"]<-NA
+#PBMIN flux is difference between PGMIN and PBMIN (not corrected by BP, but check)
+dfa$PBMIN[dfa$MOD=="CAB"]<-dfa$PGMIN[dfa$MOD=="CAB"]-dfa$PBMIN[dfa$MOD=="CAB"]  
+
+#add model group variable (C, CN, CNP)
 group1<-c("INL","ED2","FAT")
 group2<-c("LPJ","OCN","GDA","JUL","PON")
 group3<-c("CAB","GDP","ELM","ECA","ORC","POP")
@@ -51,6 +57,16 @@ dfa$MODgr[dfa$MOD%in%group2]<-"CN"
 dfa$MODgr[dfa$MOD%in%group3]<-"CNP"
 dfa$MODgr<-as.factor(dfa$MODgr)
 dfa<-dfa[,c(1:2,ncol(dfa),3:(ncol(dfa)-1))]
+#............................................................................
+
+maxyear<-2013
+model_names<-c("CABLE","CABLE-POP","ELM-CTC","ELM-ECA","GDAY","ORCHIDEE","LPJ-GUESS","CABLE-POP(CN)","O-CN","GDAY(CN)","JULES","ED2","ELM-FATES","InLand")
+modcod<-c("CAB","POP","PON","LPJ","OCN","GDA","GDP","ECA","ELM","JUL","ORC","INL","ED2","FAT")
+
+#create colour scale for models
+cols=data.frame(MOD=c(levels(dfa$MOD)),COL=c(brewer.pal(7,"Greens")[7:2],brewer.pal(6,"Blues")[2:6],brewer.pal(4,"Greys")[c(2:4)]),stringsAsFactors = F)
+
+units<- readRDS('units_frame.rds')
 
 #function to calculate rel change of variables over initial, end time period (+-2 years) and complete period, 
 relgr<-function(frame, init, end) {
@@ -75,6 +91,7 @@ return(out)
 
 }
 
+#take out what we dont need...
 #function for calculating additional variables
 addvars<-function(frame) {
   
@@ -190,29 +207,15 @@ addvars<-function(frame) {
   
   return(frame)
 }
+dfa<-addvars(dfa)
 
 ind<-dfa$YEAR<=maxyear+2 #need min. 2 extra years to calculate average effect of 15 years (1999-2013)
 #need to move them to before!!!
 #write.csv(dfa,"amaface_co2runs_annual.csv",row.names = F)
 #saveRDS(dfa, "amaface_co2runs_annualbio.rds")
 
-#some fixes for now (need fixing by modelers) (always copy from processing script)
-dfa$TAIR<-dfa$TAIR+273.15  #all models provide in celsius now??
-dfa$AIRP[dfa$MOD%in%c("OCN","GDP","GDA","ECA","JUL","ELM")]<-dfa$AIRP[dfa$MOD%in%c("OCN","GDP","GDA","ECA","JUL","ELM")]/100 #is in Pa but should be in hPa
-#dfa$VPD[dfa$MOD%in%c("CAB","POP")]<-NA #Bernard said this output is irrelevant, not used by CABLE
-dfa$PPMIN[dfa$MOD=="ECA"]<-dfa$PLAB[dfa$MOD=="ECA"]+dfa$PSEC[dfa$MOD=="ECA"]+dfa$POCC[dfa$MOD=="ECA"]+dfa$PPAR[dfa$MOD=="ECA"]
-dfa$PSOIL[dfa$MOD=="ECA"]<-dfa$PPMIN[dfa$MOD=="ECA"]+dfa$PPORG[dfa$MOD=="ECA"]
-dfa$PPMIN[dfa$MOD=="ORC"]<-dfa$PLAB[dfa$MOD=="ORC"]  #+dfa$PSEC[dfa$MOD=="ORC"]+dfa$POCC[dfa$MOD=="ORC"]+dfa$PPAR[dfa$MOD=="ORC"],na.rm=T)
-dfa$NFLIT[dfa$MOD=="LPJ"]<-dfa$NFLITA[dfa$MOD=="LPJ"]+dfa$NFLITB[dfa$MOD=="LPJ"] 
-#move CR to fine roots in CAB (still check with BP/YP)
-dfa$CFR[dfa$MOD=="CAB"]<-dfa$CCR[dfa$MOD=="CAB"] 
-dfa$CCR[dfa$MOD=="CAB"]<-NA
-dfa$CGFR[dfa$MOD=="CAB"]<-dfa$CGCR[dfa$MOD=="CAB"] 
-dfa$CGCR[dfa$MOD=="CAB"]<-NA
-#PBMIN flux is difference between PGMIN and PBMIN (not corrected by BP, but check)
-dfa$PBMIN[dfa$MOD=="CAB"]<-dfa$PGMIN[dfa$MOD=="CAB"]-dfa$PBMIN[dfa$MOD=="CAB"]  
 
-dfa<-addvars(dfa)
+
 
 #---------------------------------------------------------------------------------------------------------------
 # CALCULATE effects of CO2
@@ -545,6 +548,7 @@ p5<-ggplot(data=frame_sub, aes(x=variable, y=value/14.5, fill=sign)) +
 
 print(ggarrange(p5, p1, p2, p3, p4, nrow=5,align="v", 
                 heights=c(6.5,4.5,5.5,8,8),labels=c("a","b","c","d","e"),font.label=list(size=7,color="black",face="bold",family="Arial")))
+
 ggsave("FIG3_keymechanisms_NP_NatGEO.pdf",device=cairo_pdf,width=180,height=120,units=c("mm"))
 
 
