@@ -10,7 +10,7 @@ The purpose of this code base was to calculate the eCO2 effect from a set of eco
 
 This repo does not include the model driving data as they must be obtained elsewehere. Included in this repo are the following datasets and scripts:
 
-amaface_CO2_biolyear.csv: model output excel file
+amaface_CO2_biolyear.csv: model output excel file/
 amaface_model_analysis.R: R script for analysis and producing of Figure 1 and 3 of the main article file. 
 
 Licence
