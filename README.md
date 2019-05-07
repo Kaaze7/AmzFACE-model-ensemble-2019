@@ -1,8 +1,10 @@
 AmazonFACE ecosystem model ensemble analysis
+===================
 
 This code is associated with Fleischer et al., Future CO2 fertilization of the Amazon forest hinges on plant phosphorus use and acquisition, Nature  Geoscience (2019), and the manuscript should be considered the primary citation.
 
 Purpose
+-----------------
 
 The purpose of this code base was to calculate the eCO2 effect from a set of ecosystem model simulations for the planned AmazonFACE experiment. 
 
@@ -12,6 +14,7 @@ amaface_CO2_biolyear.csv: model output excel file
 amaface_model_analysis.R: R script for analysis and producing of Figure 1 and 3 of the main article file. 
 
 Licence
+-----------------
 
 The MIT License (MIT)
 Copyright (c) 2019 Katrin Fleischer 
